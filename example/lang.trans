@@ -1,0 +1,61 @@
+[hinclude]
+#include <stddef.h>
+
+[cinclude]
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+[header]
+typedef enum { NONE=0, ID, NUM, INT, FLOAT, IF, THEN, ELSE, RELOP, EQ, NE, LE, GE, LT, GT } lex_class_t;
+
+typedef struct {
+    int class;
+    char *str;
+    size_t str_len;
+    union {
+        struct {
+            int tag;
+            union {
+                int i;
+                float f;
+            };
+        } num;
+        struct {
+            int op;
+        } relop;
+    };
+} lexeme_t;
+
+[regexes]
+"\w(\w|\d)*" { 
+    char *tmp = malloc(lex->str_len+1);
+    if(!tmp) {
+        perror("malloc");
+        return -1;
+    }
+    memcpy(tmp, lex->str, lex->str_len+1);
+    lex->str = tmp;
+    return ID;
+}
+"\d\d*" { lex->num.tag = INT; lex->num.i = parse_int(lex->str); return NUM; }
+"\d\d*\.\d\d*" { lex->num.tag = FLOAT; lex->num.f = parse_float(lex->str); return NUM; }
+"if" { return IF; }
+"then" { return THEN; }
+"else" { return ELSE; }
+"==" { lex->relop.op = EQ; return RELOP; }
+"!=" { lex->relop.op = NE; return RELOP; }
+"<=" { lex->relop.op = LE; return RELOP; }
+">=" { lex->relop.op = GE; return RELOP; }
+"<"  { lex->relop.op = LT; return RELOP; }
+">"  { lex->relop.op = GT; return RELOP; }
+"\s\s*" { return NONE; }
+
+[funcs]
+static inline int parse_int(const char *str) {
+    return atoi(str);
+}
+
+static float parse_float(const char *str) {
+    return atof(str);
+}
